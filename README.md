@@ -1,5 +1,3 @@
-
-```markdown
 # Task Manager API
 
 A Spring Boot REST API for managing personal tasks, with an AI-powered suggestion endpoint backed by Claude.
