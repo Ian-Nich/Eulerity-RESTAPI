@@ -4,3 +4,4 @@ build/
 *.class
 .env
 candidate_readme.md
+TRANSCRIPT.md
