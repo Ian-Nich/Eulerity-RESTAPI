@@ -1,4 +1,3 @@
-Here's the updated README. Replace your current `README.md` with this:
 
 ```markdown
 # Task Manager API
