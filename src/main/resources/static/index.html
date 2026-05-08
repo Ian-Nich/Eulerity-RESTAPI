@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Task Manager</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+    h1, h2 { border-bottom: 1px solid #ccc; padding-bottom: 6px; }
+    input, select, textarea { width: 100%; padding: 6px; margin: 4px 0 12px; box-sizing: border-box; }
+    button { padding: 8px 16px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #f4f4f4; }
+    pre { background: #f4f4f4; padding: 12px; white-space: pre-wrap; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+
+<h1>Task Manager</h1>
+
+<!-- TASK LIST -->
+<h2>All Tasks</h2>
+<button onclick="loadTasks()">Refresh</button>
+<table id="task-table">
+  <thead><tr><th>ID</th><th>Title</th><th>Priority</th><th>Status</th><th>Due Date</th></tr></thead>
+  <tbody id="task-body"></tbody>
+</table>
+
+<!-- CREATE TASK -->
+<h2>Create Task</h2>
+<label>Title*</label>
+<input id="c-title" type="text" placeholder="Task title" />
+<label>Description</label>
+<textarea id="c-desc" rows="2" placeholder="Optional description"></textarea>
+<label>Due Date</label>
+<input id="c-due" type="date" />
+<label>Priority</label>
+<select id="c-priority">
+  <option>LOW</option>
+  <option selected>MEDIUM</option>
+  <option>HIGH</option>
+</select>
+<label>Status</label>
+<select id="c-status">
+  <option selected>TODO</option>
+  <option>IN_PROGRESS</option>
+  <option>DONE</option>
+</select>
+<button onclick="createTask()">Create Task</button>
+<p id="create-msg"></p>
+
+<!-- AI SUGGEST -->
+<h2>AI Task Suggestion</h2>
+<p>Provide a title and optional description — the AI will suggest priority, due date, and status.</p>
+<label>Title*</label>
+<input id="s-title" type="text" placeholder="e.g. Submit quarterly report" />
+<label>Description</label>
+<textarea id="s-desc" rows="2" placeholder="Optional context"></textarea>
+<button onclick="suggestTask()">Get AI Suggestion</button>
+<pre id="suggest-result"></pre>
+
+<script>
+  const BASE = '/tasks';
+
+  async function loadTasks() {
+    const res = await fetch(BASE);
+    const tasks = await res.json();
+    const tbody = document.getElementById('task-body');
+    tbody.innerHTML = '';
+    if (tasks.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5">No tasks yet.</td></tr>';
+      return;
+    }
+    tasks.forEach(t => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${t.id}</td><td>${t.title}</td><td>${t.priority}</td><td>${t.status}</td><td>${t.dueDate ?? '—'}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function createTask() {
+    const title = document.getElementById('c-title').value.trim();
+    const msg = document.getElementById('create-msg');
+    if (!title) { msg.textContent = 'Title is required.'; msg.className = 'error'; return; }
+
+    const body = {
+      title,
+      description: document.getElementById('c-desc').value || null,
+      dueDate: document.getElementById('c-due').value || null,
+      priority: document.getElementById('c-priority').value,
+      status: document.getElementById('c-status').value
+    };
+
+    const res = await fetch(BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (res.ok) {
+      msg.textContent = 'Task created!'; msg.className = '';
+      document.getElementById('c-title').value = '';
+      document.getElementById('c-desc').value = '';
+      loadTasks();
+    } else {
+      const err = await res.json();
+      msg.textContent = 'Error: ' + (err.detail ?? 'unknown error'); msg.className = 'error';
+    }
+  }
+
+  async function suggestTask() {
+    const title = document.getElementById('s-title').value.trim();
+    const out = document.getElementById('suggest-result');
+    if (!title) { out.textContent = 'Title is required.'; return; }
+
+    out.textContent = 'Thinking...';
+    const res = await fetch(BASE + '/suggest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        description: document.getElementById('s-desc').value || null
+      })
+    });
+
+    const data = await res.json();
+    out.textContent = JSON.stringify(data, null, 2);
+  }
+
+  loadTasks();
+</script>
+</body>
+</html>
