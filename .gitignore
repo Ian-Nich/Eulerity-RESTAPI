@@ -3,3 +3,4 @@ build/
 .gradle/
 *.class
 .env
+candidate_readme.md
